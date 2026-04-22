@@ -1,0 +1,64 @@
+# ------------------------------
+# OS / Editor
+# ------------------------------
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ------------------------------
+# Secrets / local env
+# ------------------------------
+.env
+.env.*
+!.env.example
+
+# ------------------------------
+# Frontend (React / Vite / Node)
+# ------------------------------
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.vite/
+frontend/.cache/
+frontend/coverage/
+frontend/logs/
+frontend/*.log
+frontend/*.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+frontend/lerna-debug.log*
+
+# ------------------------------
+# Backend (Python / FastAPI)
+# ------------------------------
+backend/.venv/
+backend/venv/
+backend/__pycache__/
+backend/**/*.py[cod]
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.ruff_cache/
+backend/.coverage
+backend/.coverage.*
+backend/htmlcov/
+backend/.python-version
+backend/pip-wheel-metadata/
+
+# ------------------------------
+# Generic build artifacts
+# ------------------------------
+*.egg-info/
+.eggs/
+build/
+site/
+
+.cursor
