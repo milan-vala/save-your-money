@@ -13,7 +13,7 @@ export function Home() {
             AI-Powered Loan Intelligence
           </p>
 
-          <h1 className="text-4xl leading-tight font-bold tracking-tight text-[--gray-12] sm:text-5xl">
+               <h1 className="text-4xl leading-tight font-bold tracking-tight text-[--gray-12] sm:text-5xl">
             Your loans are costing you more than you think. Let&apos;s fix that.
           </h1>
 
