@@ -2,6 +2,7 @@ import { useState } from "react";
 import { IconButton, Theme } from "@radix-ui/themes";
 import { Moon, Sun } from "lucide-react";
 import { Link, NavLink, Outlet } from "react-router-dom";
+import { AmbientGlow } from "@src/components/ambient-glow";
 
 export function RootLayout() {
   const [isDark, setIsDark] = useState<boolean>(true);
@@ -15,8 +16,10 @@ export function RootLayout() {
       scaling="100%"
       className={isDark ? "app-theme-dark" : "app-theme-light"}
     >
-      <div className="min-h-screen bg-[--gray-1] text-[--gray-12]">
-        <header className="border-b border-[--gray-6] bg-[--color-panel-solid]/90 backdrop-blur">
+      <div className="relative min-h-screen overflow-x-hidden bg-[--gray-1] text-[--gray-12]">
+        <AmbientGlow visible={isDark} />
+
+        <header className="relative z-10 border-b border-[--gray-6] bg-[--color-panel-solid]/90 backdrop-blur">
           <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
             <Link to="/" className="text-lg font-semibold tracking-tight">
               Save Your Money
@@ -76,7 +79,7 @@ export function RootLayout() {
           </div>
         </header>
 
-        <main>
+        <main className="relative z-10">
           <Outlet />
         </main>
       </div>
