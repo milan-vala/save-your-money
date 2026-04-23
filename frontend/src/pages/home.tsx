@@ -3,17 +3,17 @@ import { Link } from "react-router-dom";
 export function Home() {
   return (
     <section className="relative overflow-hidden px-4 py-16 sm:px-6 sm:py-20">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-10 h-72 w-72 -translate-x-1/2 rounded-full bg-[--accent-4] blur-3xl sm:h-96 sm:w-96" />
+              <div className="pointer-events-none absolute inset-0">
+        <div className="absolute top-10 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-[--accent-4] blur-3xl sm:h-96 sm:w-96" />
       </div>
 
       <div className="relative mx-auto grid w-full max-w-6xl items-center gap-10 lg:grid-cols-2">
         <div className="space-y-6">
-          <p className="inline-flex rounded-full border border-[--accent-7] bg-[--accent-3] px-3 py-1 text-xs font-semibold text-[--accent-11]">
+                <p className="inline-flex rounded-full border border-[--accent-7] bg-[--accent-3] px-3 py-1 text-xs font-semibold text-[--accent-11]">
             AI-Powered Loan Intelligence
           </p>
 
-          <h1 className="text-4xl font-bold leading-tight tracking-tight text-[--gray-12] sm:text-5xl">
+          <h1 className="text-4xl leading-tight font-bold tracking-tight text-[--gray-12] sm:text-5xl">
             Your loans are costing you more than you think. Let&apos;s fix that.
           </h1>
 
