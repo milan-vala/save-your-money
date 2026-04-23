@@ -28,7 +28,7 @@ export function Home() {
             >
               Get started
                  <span aria-hidden>→</span>
-            </Link>
+                  </Link>
             <a
               href="#features"
               className="inline-flex items-center justify-center rounded-lg border border-[--gray-7] bg-[--color-panel-solid] px-5 py-3 text-sm font-medium text-[--gray-12] transition hover:bg-[--gray-3]"
