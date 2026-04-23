@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Theme, Switch } from "@radix-ui/themes";
+import { IconButton, Theme } from "@radix-ui/themes";
+import { Moon, Sun } from "lucide-react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 
 export function RootLayout() {
-  const [isDark, setIsDark] = useState<boolean>(false);
+  const [isDark, setIsDark] = useState<boolean>(true);
 
   return (
     <Theme
@@ -45,14 +46,32 @@ export function RootLayout() {
                 </NavLink>
               </nav>
 
-              <div className="flex items-center gap-2 text-sm text-[--gray-11]">
-                <span className="hidden sm:inline">Dark</span>
-                <Switch
-                  checked={isDark}
-                  onCheckedChange={(checked) => setIsDark(checked)}
-                  aria-label="Toggle dark mode"
-                />
-              </div>
+              <IconButton
+                type="button"
+                variant="ghost"
+                color="gray"
+                highContrast
+                aria-label={
+                  isDark ? "Switch to light theme" : "Switch to dark theme"
+                }
+                onClick={() => setIsDark((prev) => !prev)}
+              >
+                {isDark ? (
+                  <Sun
+                    aria-hidden
+                    size={18}
+                    strokeWidth={1.75}
+                    className="cursor-pointer"
+                  />
+                ) : (
+                  <Moon
+                    aria-hidden
+                    size={18}
+                    strokeWidth={1.75}
+                    className="cursor-pointer"
+                  />
+                )}
+              </IconButton>
             </div>
           </div>
         </header>

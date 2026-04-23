@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 
 export function Login() {
   const [email, setEmail] = useState<string>("");
@@ -7,24 +6,7 @@ export function Login() {
 
   return (
     <section className="px-4 py-14 sm:px-6 sm:py-20">
-      <div className="mx-auto grid w-full max-w-6xl items-center gap-10 lg:grid-cols-2">
-        <div className="space-y-4">
-          <p className="text-sm font-medium text-[--accent-11]">Welcome back</p>
-          <h1 className="text-3xl font-bold tracking-tight text-[--gray-12] sm:text-4xl">
-            Sign in to continue your savings journey
-          </h1>
-          <p className="max-w-md text-[--gray-11]">
-            Access your loan portfolio, compare prepayment scenarios, and track
-            how much interest you can still save.
-          </p>
-          <Link
-            to="/"
-            className="inline-block text-sm font-medium text-[--accent-11] hover:underline"
-          >
-            ← Back to home
-          </Link>
-        </div>
-
+      <div className="mx-auto flex w-full max-w-md flex-col gap-10 sm:max-w-lg">
         <div className="rounded-2xl border border-[--gray-6] bg-[--color-panel-solid] p-6 shadow-sm sm:p-8">
           <form
             className="space-y-4"
@@ -79,6 +61,17 @@ export function Login() {
               Sign in
             </button>
           </form>
+        </div>
+
+        <div className="space-y-4">
+          <p className="text-sm font-medium text-[--accent-11]">Welcome back</p>
+          <h1 className="text-3xl font-bold tracking-tight text-[--gray-12] sm:text-4xl">
+            Sign in to continue your savings journey
+          </h1>
+          <p className="text-[--gray-11]">
+            Access your loan portfolio, compare prepayment scenarios, and track
+            how much interest you can still save.
+          </p>
         </div>
       </div>
     </section>
