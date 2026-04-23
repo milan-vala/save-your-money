@@ -22,12 +22,12 @@ export function Home() {
           </p>
 
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Link
+  <Link
               to="/login"
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-[--accent-9] px-5 py-3 text-sm font-semibold text-[--accent-contrast] transition hover:bg-[--accent-10]"
             >
               Get started
-              <span aria-hidden>→</span>
+                 <span aria-hidden>→</span>
             </Link>
             <a
               href="#features"
