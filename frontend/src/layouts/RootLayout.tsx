@@ -12,6 +12,7 @@ export function RootLayout() {
       grayColor="slate"
       radius="large"
       scaling="100%"
+      className={isDark ? "app-theme-dark" : "app-theme-light"}
     >
       <div className="min-h-screen bg-[--gray-1] text-[--gray-12]">
         <header className="border-b border-[--gray-6] bg-[--color-panel-solid]/90 backdrop-blur">

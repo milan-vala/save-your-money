@@ -12,7 +12,26 @@ body {
 
 .radix-themes {
   --default-font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --heading-font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --code-font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Default primary text color + Radix body/strong token alignment */
+.radix-themes.app-theme-light {
+  --app-text-primary: #121212;
+  color: var(--app-text-primary);
+  --gray-12: #121212;
+  /* Page / canvas background (used by bg-[--gray-1] in layout) */
+  --gray-1: #f8f8f6;
+}
+
+.radix-themes.app-theme-dark {
+  --app-text-primary: #c3c2b7;
+  color: var(--app-text-primary);
+  --gray-12: #c3c2b7;
+  /* Page / canvas background (used by bg-[--gray-1] in layout) */
+  --gray-1: #1f1f1e;
 }

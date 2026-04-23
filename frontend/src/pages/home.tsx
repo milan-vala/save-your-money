@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import heroIllustration from "../assets/landing-fintech-hero.png";
 
 export function Home() {
   return (
@@ -7,7 +8,7 @@ export function Home() {
         <div className="absolute top-10 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-[--accent-4] blur-3xl sm:h-96 sm:w-96" />
       </div>
 
-      <div className="relative mx-auto grid w-full max-w-6xl items-center gap-10 lg:grid-cols-2">
+      <div className="relative mx-auto grid w-full max-w-6xl items-center gap-10 lg:grid-cols-2 lg:gap-12">
         <div className="space-y-6">
           <p className="inline-flex rounded-full border border-[--accent-7] bg-[--accent-3] px-3 py-1 text-xs font-semibold text-[--accent-11]">
             AI-Powered Loan Intelligence
@@ -38,6 +39,20 @@ export function Home() {
           </div>
         </div>
 
+        <div className="relative flex justify-center lg:justify-end">
+          <div className="w-full max-w-md overflow-hidden rounded-2xl bg-[--color-panel-solid] shadow-sm">
+            <img
+              src={heroIllustration}
+              alt="Saving across currencies: hand placing coins into a piggy bank"
+              className="h-auto w-full object-cover"
+              loading="eager"
+              decoding="async"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="relative mx-auto mt-14 w-full max-w-6xl px-0 sm:mt-16">
         <div
           id="features"
           className="rounded-2xl border border-[--gray-6] bg-[--color-panel-solid] p-6 shadow-sm sm:p-8"
