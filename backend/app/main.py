@@ -1,14 +1,21 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic_settings import BaseSettings, SettingsConfigDict
 
-class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_ignore_empty=True)
+from app.api.auth import router as auth_router
+from app.core.config import settings
+from app.core.firebase import init_firebase_app
 
-    gemini_api_key: str | None = None
-    environment: str = "development"
 
-settings = Settings()
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    init_firebase_app(
+        credentials_path=settings.firebase_credentials_path,
+        credentials_json=settings.firebase_credentials_json,
+    )
+    yield
+
 
 app = FastAPI(
     title="Save Your Money - Loan Intelligence API",
@@ -17,21 +24,25 @@ app = FastAPI(
     contact={
         "name": "Save Your Money",
         "url": "https://saveyourmoney.com",
-        "email": "info@saveyourmoney.com"
+        "email": "info@saveyourmoney.com",
     },
     license_info={
         "name": "MIT License",
-        "url": "https://opensource.org/licenses/MIT"
-    }
+        "url": "https://opensource.org/licenses/MIT",
+    },
+    lifespan=lifespan,
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth_router)
+
 
 @app.get("/")
 async def root():
@@ -39,12 +50,13 @@ async def root():
         "message": "🚀 Save Your Money API is running!",
         "status": "healthy",
         "docs_url": "/docs",
-        "environment": settings.environment
+        "environment": settings.environment,
     }
+
 
 @app.get("/health")
 async def health_check():
     return {
         "status": "ok",
-        "version": "0.1.0"
+        "version": "0.1.0",
     }
