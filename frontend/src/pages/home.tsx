@@ -1,7 +1,11 @@
 import { Link } from "react-router-dom";
+import { useAuth } from "@src/lib/auth.tsx";
 import heroIllustration from "../assets/landing-fintech-hero.png";
+import { ChevronRight } from "lucide-react";
 
 export function Home() {
+  const { isAuthenticated } = useAuth();
+
   return (
     <section className="relative overflow-hidden px-4 py-16 sm:px-6 sm:py-20">
       <div className="pointer-events-none absolute inset-0">
@@ -24,18 +28,12 @@ export function Home() {
 
           <div className="flex flex-col gap-3 sm:flex-row">
             <Link
-              to="/login"
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-[--accent-9] px-5 py-3 text-sm font-semibold text-[--accent-contrast] transition hover:bg-[--accent-10]"
+              to={isAuthenticated ? "/dashboard" : "/login"}
+              className="flex items-center gap-2 rounded-lg bg-[#9cb1ff] px-5 py-3 text-sm font-medium text-white transition"
             >
-              Get started.
-              <span aria-hidden>→</span>
+              {isAuthenticated ? "Dashboard" : "Get started"}
+              <ChevronRight size={18} />
             </Link>
-            <a
-              href="#features"
-              className="inline-flex items-center justify-center rounded-lg border border-[--gray-7] bg-[--color-panel-solid] px-5 py-3 text-sm font-medium text-[--gray-12] transition hover:bg-[--gray-3]"
-            >
-              Explore features
-            </a>
           </div>
         </div>
 
