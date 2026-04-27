@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
-import { getApiBaseUrl } from "@src/lib/api.ts";
+import { createSession } from "../../apis/auth-apis";
 import { useAuth } from "@src/lib/auth.tsx";
 import { getFirebaseAuth, getUserRefreshToken } from "@src/lib/firebase.ts";
 
@@ -20,25 +20,7 @@ export function Login() {
       const idToken = await cred.user.getIdToken();
       const refreshToken = getUserRefreshToken(cred.user);
 
-      const res = await fetch(`${getApiBaseUrl()}/auth/session`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken, refreshToken }),
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        let detail = text || res.statusText;
-        try {
-          const j = JSON.parse(text) as { detail?: unknown };
-          if (typeof j.detail === "string") detail = j.detail;
-        } catch {
-          /* keep detail */
-        }
-        throw new Error(detail || `Session failed (${res.status})`);
-      }
-
+      await createSession({ idToken, refreshToken });
       await refreshSession();
       await signOut(auth);
       navigate("/dashboard", { replace: true });

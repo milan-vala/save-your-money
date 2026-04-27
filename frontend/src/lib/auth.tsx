@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { apiFetch, getApiBaseUrl } from "@src/lib/api.ts";
+import { getCurrentUser, logout as logoutApi } from "../../apis/auth-apis";
 
 type SessionUser = {
   uid: string;
@@ -26,32 +26,29 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [user, setUser] = useState<SessionUser | null>(null);
 
   const refreshSession = useCallback(async (): Promise<boolean> => {
-    const res = await apiFetch("/auth/me", { method: "GET" });
-    if (!res.ok) {
+    try {
+      const data = await getCurrentUser();
+      if (typeof data.uid !== "string" || !data.uid) {
+        setUser(null);
+        return false;
+      }
+      setUser({
+        uid: data.uid,
+        email: typeof data.email === "string" ? data.email : null,
+      });
+      return true;
+    } catch {
       setUser(null);
       return false;
     }
-    const data = (await res.json()) as { uid?: unknown; email?: unknown };
-    if (typeof data.uid !== "string" || !data.uid) {
-      setUser(null);
-      return false;
-    }
-    setUser({
-      uid: data.uid,
-      email: typeof data.email === "string" ? data.email : null,
-    });
-    return true;
   }, []);
 
   const logout = useCallback(async () => {
-    await fetch(`${getApiBaseUrl()}/auth/logout`, {
-      method: "POST",
-      credentials: "include",
-    });
+    await logoutApi();
     setUser(null);
   }, []);
 
