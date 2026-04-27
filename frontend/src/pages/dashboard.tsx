@@ -4,7 +4,7 @@ export function Dashboard() {
   return (
     <section className="py-2">
       <div className="space-y-6">
-        <div className="rounded-2xl border border-[--gray-6] bg-[--color-panel-solid] p-6 shadow-sm sm:p-8">
+        <div className="rounded-2xl border border-[--gray-6]/60 bg-[--gray-2]/40 p-6 sm:p-8">
           <p className="text-sm font-medium text-[--accent-11]">
             Loan Accounts
           </p>

@@ -26,7 +26,7 @@ export function LoanAccountCreate() {
 
   return (
     <section className="py-2">
-      <div className="rounded-2xl border border-[--gray-6] bg-[--color-panel-solid] p-6 shadow-sm sm:p-8">
+      <div className="rounded-2xl border border-[--gray-6]/60 bg-[--gray-2]/40 p-6 sm:p-8">
         <div className="mb-6 flex items-center justify-between gap-3">
           <div>
             <p className="text-sm font-medium text-[--accent-11]">
@@ -45,7 +45,7 @@ export function LoanAccountCreate() {
         </div>
 
         <form className="space-y-6" onSubmit={onSubmit}>
-          <div>
+          <div className="rounded-xl bg-[--gray-3]/45 p-3">
             <label
               htmlFor="account-name"
               className="mb-2 block text-sm font-medium text-[--gray-12]"
@@ -59,11 +59,11 @@ export function LoanAccountCreate() {
               value={accountName}
               onChange={(event) => setAccountName(event.target.value)}
               placeholder="e.g. SBI Home Loan - Mumbai Flat"
-              className="w-full rounded-lg border border-[--gray-7] bg-[--gray-2] px-3 py-2.5 text-sm text-[--gray-12] outline-none placeholder:text-[--gray-10] focus:border-[--accent-8]"
+              className="w-full rounded-lg border border-[--gray-6]/60 bg-[--gray-1]/60 px-3 py-2.5 text-sm text-[--gray-12] outline-none placeholder:text-[--gray-10] focus:border-[--accent-8]"
             />
           </div>
 
-          <div>
+          <div className="rounded-xl bg-[--gray-3]/45 p-3">
             <label
               htmlFor="repayment-schedule"
               className="mb-2 block text-sm font-medium text-[--gray-12]"
@@ -78,7 +78,7 @@ export function LoanAccountCreate() {
               onChange={(event) =>
                 setRepaymentPdf(event.target.files?.[0] ?? null)
               }
-              className="block w-full rounded-lg border border-[--gray-7] bg-[--gray-2] px-3 py-2 text-sm text-[--gray-12]"
+              className="block w-full rounded-lg border border-[--gray-6]/60 bg-[--gray-1]/60 px-3 py-2 text-sm text-[--gray-12]"
             />
             <p className="mt-2 text-xs text-[--gray-11]">
               Upload your monthly EMI / repayment schedule (PDF with the table
@@ -86,7 +86,7 @@ export function LoanAccountCreate() {
             </p>
           </div>
 
-          <div>
+          <div className="rounded-xl bg-[--gray-3]/45 p-3">
             <label
               htmlFor="sanction-terms"
               className="mb-2 block text-sm font-medium text-[--gray-12]"
@@ -98,7 +98,7 @@ export function LoanAccountCreate() {
               type="file"
               accept="application/pdf"
               onChange={(event) => setTermsPdf(event.target.files?.[0] ?? null)}
-              className="block w-full rounded-lg border border-[--gray-7] bg-[--gray-2] px-3 py-2 text-sm text-[--gray-12]"
+              className="block w-full rounded-lg border border-[--gray-6]/60 bg-[--gray-1]/60 px-3 py-2 text-sm text-[--gray-12]"
             />
             <p className="mt-2 text-xs text-[--gray-11]">
               Upload the loan offer letter or detailed terms & conditions (helps

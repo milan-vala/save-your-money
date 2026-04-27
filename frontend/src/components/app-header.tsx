@@ -1,7 +1,6 @@
-import { DropdownMenu, IconButton } from "@radix-ui/themes";
-import { CircleUserRound, Moon, Sun } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "@src/lib/auth.tsx";
+import { IconButton } from "@radix-ui/themes";
+import { Moon, Sun } from "lucide-react";
+import { Link } from "react-router-dom";
 
 type AppHeaderProps = {
   isDark: boolean;
@@ -9,16 +8,8 @@ type AppHeaderProps = {
 };
 
 export function AppHeader({ isDark, onToggleTheme }: AppHeaderProps) {
-  const navigate = useNavigate();
-  const { logout } = useAuth();
-
-  async function handleLogout() {
-    await logout();
-    navigate("/login", { replace: true });
-  }
-
   return (
-    <header className="relative z-10 border-b border-[--gray-6] bg-[--color-panel-solid]/90 backdrop-blur">
+    <header className="relative z-10 border-b border-[#34343d] bg-[--color-panel-solid] backdrop-blur">
       <div className="flex w-full items-center justify-between px-4 py-3 sm:px-6">
         <Link to="/dashboard" className="text-lg font-semibold tracking-tight">
           Save Your Money
@@ -52,50 +43,6 @@ export function AppHeader({ isDark, onToggleTheme }: AppHeaderProps) {
               />
             )}
           </IconButton>
-
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger>
-              <IconButton
-                type="button"
-                variant="ghost"
-                color="gray"
-                highContrast
-                aria-label="Open options menu"
-                className="cursor-pointer"
-                style={{ cursor: "pointer" }}
-              >
-                <CircleUserRound
-                  aria-hidden
-                  size={18}
-                  strokeWidth={1.75}
-                  className="cursor-pointer"
-                />
-              </IconButton>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content align="end">
-              <DropdownMenu.Item
-                className="cursor-pointer"
-                style={{ cursor: "pointer" }}
-              >
-                Profile
-              </DropdownMenu.Item>
-              <DropdownMenu.Item
-                className="cursor-pointer"
-                style={{ cursor: "pointer" }}
-              >
-                Settings
-              </DropdownMenu.Item>
-              <DropdownMenu.Separator />
-              <DropdownMenu.Item
-                color="red"
-                onSelect={() => void handleLogout()}
-                className="cursor-pointer"
-                style={{ cursor: "pointer" }}
-              >
-                Logout
-              </DropdownMenu.Item>
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
         </div>
       </div>
     </header>

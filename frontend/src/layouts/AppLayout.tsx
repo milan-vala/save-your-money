@@ -6,6 +6,7 @@ import { AppSidebar } from "@src/components/app-sidebar.tsx";
 
 export function AppLayout() {
   const [isDark, setIsDark] = useState<boolean>(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
 
   return (
     <Theme
@@ -16,15 +17,18 @@ export function AppLayout() {
       scaling="100%"
       className={isDark ? "app-theme-dark" : "app-theme-light"}
     >
-      <div className="relative min-h-screen overflow-x-hidden bg-[--gray-1] text-[--gray-12]">
+      <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-[--gray-1] text-[--gray-12]">
         <AppHeader
           isDark={isDark}
           onToggleTheme={() => setIsDark((prev) => !prev)}
         />
-        <main className="relative z-10 px-4 py-6 sm:px-6 sm:py-8">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-            <AppSidebar />
-            <div className="min-w-0">
+        <main className="relative z-10 min-h-0 flex-1">
+          <div className="grid h-full grid-cols-1 lg:grid-cols-[auto_minmax(0,1fr)]">
+            <AppSidebar
+              collapsed={sidebarCollapsed}
+              onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
+            />
+            <div className="min-w-0 px-4 py-6 sm:px-6 sm:py-8">
               <Outlet />
             </div>
           </div>
