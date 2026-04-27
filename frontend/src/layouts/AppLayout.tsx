@@ -3,6 +3,7 @@ import { Theme } from "@radix-ui/themes";
 import { Outlet } from "react-router-dom";
 import { AppHeader } from "@src/components/app-header.tsx";
 import { AppSidebar } from "@src/components/app-sidebar.tsx";
+import { AmbientGlow } from "@src/components/ambient-glow";
 
 export function AppLayout() {
   const [isDark, setIsDark] = useState<boolean>(true);
@@ -18,6 +19,7 @@ export function AppLayout() {
       className={isDark ? "app-theme-dark" : "app-theme-light"}
     >
       <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-[--gray-1] text-[--gray-12]">
+        <AmbientGlow visible={isDark} />
         <AppHeader
           isDark={isDark}
           onToggleTheme={() => setIsDark((prev) => !prev)}

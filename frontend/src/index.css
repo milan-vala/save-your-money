@@ -17,6 +17,14 @@ body {
     "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --code-font-family:
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /*
+   * App `Button` (`src/ui/button.tsx`) — default when no theme class is set;
+   * matches light palette. Dark overrides below.
+   */
+  --ui-button-bg: #e8edf8;
+  --ui-button-bg-hover: #dbe4f5;
+  --ui-button-fg: #1a1f36;
 }
 
 /* Default primary text color + Radix body/strong token alignment */
@@ -26,6 +34,9 @@ body {
   --gray-12: #121212;
   /* Page / canvas background (used by bg-[--gray-1] in layout) */
   --gray-1: #f8f8f6;
+  --ui-button-bg: #e8edf8;
+  --ui-button-bg-hover: #dbe4f5;
+  --ui-button-fg: #1a1f36;
 }
 
 .radix-themes.app-theme-dark {
@@ -34,4 +45,31 @@ body {
   --gray-12: #c3c2b7;
   /* Page / canvas background (used by bg-[--gray-1] in layout) */
   --gray-1: #1f1f1e;
+  --ui-button-bg: #9cb1ff;
+  --ui-button-bg-hover: #aec4ff;
+  --ui-button-fg: #141822;
+}
+
+/* Radix solid buttons use layered backgrounds; override with app tokens for `.ui-button` */
+.radix-themes .ui-button:is(button, a).rt-variant-solid:not(:disabled) {
+  background-color: var(--ui-button-bg) !important;
+  background-image: none !important;
+  color: var(--ui-button-fg) !important;
+}
+
+.radix-themes .ui-button:is(button, a).rt-variant-solid:not(:disabled):hover {
+  background-color: var(--ui-button-bg-hover) !important;
+}
+
+/*
+ * Radix `rt-reset` / base button styles load after Tailwind, so utilities like
+ * `cursor-pointer` on `className` often lose. Set cursor once for `.ui-button`.
+ */
+.radix-themes .ui-button.rt-BaseButton:not(:disabled):not([data-disabled]) {
+  cursor: pointer !important;
+}
+
+.radix-themes .ui-button.rt-BaseButton:disabled,
+.radix-themes .ui-button.rt-BaseButton[data-disabled] {
+  cursor: not-allowed !important;
 }

@@ -3,6 +3,7 @@ import { useFormik } from "formik";
 import { Link } from "react-router-dom";
 import * as yup from "yup";
 import { FileUpload } from "@src/components/file-upload.tsx";
+import { Button } from "@src/ui/button.tsx";
 import type { LoanAccountFormProps, LoanAccountFormValues } from "./types.ts";
 
 const loanAccountSchema = yup.object({
@@ -186,20 +187,18 @@ export function LoanAccountForm({
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <button
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <Button
             type="submit"
             disabled={formik.isSubmitting}
-            className="inline-flex items-center justify-center rounded-lg bg-[--accent-9] px-5 py-2.5 text-sm font-semibold text-[--accent-contrast] transition hover:bg-[--accent-10] disabled:opacity-60"
+            size="2"
+            className="cursor-pointer"
           >
             {submitLabel}
-          </button>
-          <Link
-            to={cancelPath}
-            className="text-sm font-medium text-[--gray-11] hover:text-[--gray-12]"
-          >
-            Cancel
-          </Link>
+          </Button>
+          <Button asChild variant="solid" size="2">
+            <Link to={cancelPath}>Cancel</Link>
+          </Button>
         </div>
       </form>
 
