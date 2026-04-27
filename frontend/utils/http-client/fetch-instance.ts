@@ -44,7 +44,8 @@ class HttpClient {
     if (response.status !== 401) return response;
     if (
       url.includes("/api/auth/refresh") ||
-      url.includes("/api/auth/session")
+      url.includes("/api/auth/session") ||
+      url.includes("/api/auth/me")
     ) {
       return response;
     }
