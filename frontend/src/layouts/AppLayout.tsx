@@ -4,9 +4,10 @@ import { Outlet } from "react-router-dom";
 import { AppHeader } from "@src/components/app-header.tsx";
 import { AppSidebar } from "@src/components/app-sidebar.tsx";
 import { AmbientGlow } from "@src/components/ambient-glow";
+import { usePersistedAppTheme } from "@src/lib/use-persisted-app-theme.ts";
 
 export function AppLayout() {
-  const [isDark, setIsDark] = useState<boolean>(true);
+  const { isDark, toggleTheme } = usePersistedAppTheme();
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
 
   return (
@@ -20,10 +21,7 @@ export function AppLayout() {
     >
       <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-[--gray-1] text-[--gray-12]">
         <AmbientGlow visible={isDark} />
-        <AppHeader
-          isDark={isDark}
-          onToggleTheme={() => setIsDark((prev) => !prev)}
-        />
+        <AppHeader isDark={isDark} onToggleTheme={toggleTheme} />
         <main className="relative z-10 min-h-0 flex-1">
           <div className="grid h-full grid-cols-1 lg:grid-cols-[auto_minmax(0,1fr)]">
             <AppSidebar

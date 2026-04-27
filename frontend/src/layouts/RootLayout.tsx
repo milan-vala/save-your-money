@@ -1,12 +1,12 @@
-import { useState } from "react";
 import { IconButton, Theme } from "@radix-ui/themes";
 import { Moon, Sun } from "lucide-react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { AmbientGlow } from "@src/components/ambient-glow";
 import { useAuth } from "@src/lib/auth.tsx";
+import { usePersistedAppTheme } from "@src/lib/use-persisted-app-theme.ts";
 
 export function RootLayout() {
-  const [isDark, setIsDark] = useState<boolean>(true);
+  const { isDark, toggleTheme } = usePersistedAppTheme();
   const { isAuthenticated } = useAuth();
 
   return (
@@ -51,7 +51,7 @@ export function RootLayout() {
                 aria-label={
                   isDark ? "Switch to light theme" : "Switch to dark theme"
                 }
-                onClick={() => setIsDark((prev) => !prev)}
+                onClick={toggleTheme}
               >
                 {isDark ? (
                   <Sun

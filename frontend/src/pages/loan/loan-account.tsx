@@ -58,7 +58,7 @@ export function LoanAccount() {
           </div>
           <Link
             to="/dashboard"
-            className="text-sm font-medium text-[--gray-11] hover:text-[--gray-12]"
+            className="text-sm font-medium text-[--gray-11] underline hover:text-[--gray-12]"
           >
             Back to Dashboard
           </Link>
