@@ -3,7 +3,8 @@ import { RootLayout } from "./layouts/RootLayout.tsx";
 import { Home } from "@src/pages/home.tsx";
 import { Login } from "@src/pages/login.tsx";
 import { Dashboard } from "@src/pages/dashboard.tsx";
-import { LoanAccountCreate } from "@src/pages/loan-account-create.tsx";
+import { LoanAccount } from "@src/pages/loan/loan-account.tsx";
+import { AppFullWidthLayout } from "@src/layouts/AppFullWidthLayout.tsx";
 import { AppLayout } from "@src/layouts/AppLayout.tsx";
 import {
   RedirectIfAuthenticated,
@@ -33,9 +34,17 @@ function App() {
           }
         >
           <Route path="/dashboard" element={<Dashboard />} />
+        </Route>
+        <Route
+          element={
+            <RequireAuth>
+              <AppFullWidthLayout />
+            </RequireAuth>
+          }
+        >
           <Route
             path="/dashboard/loan-accounts/new"
-            element={<LoanAccountCreate />}
+            element={<LoanAccount />}
           />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

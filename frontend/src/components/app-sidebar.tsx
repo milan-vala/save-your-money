@@ -72,7 +72,7 @@ export function AppSidebar({
           className={`inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[--accent-9] px-3 py-2.5 text-sm font-semibold text-[--accent-contrast] transition hover:bg-[--accent-10] ${collapsed ? "px-0" : ""} ${isDark ? "bg-[#24242b] hover:bg-[#34343d]" : "bg-[#e8edf8] hover:bg-[#dbe4f5]"}`}
         >
           <Plus size={16} />
-          {!collapsed ? "Create Loan Account" : null}
+          {!collapsed ? "Add an Account" : null}
         </Link>
       </div>
 
