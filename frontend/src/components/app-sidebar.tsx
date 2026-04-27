@@ -7,7 +7,7 @@ import {
   Settings,
   User,
 } from "lucide-react";
-import { DropdownMenu, Popover } from "@radix-ui/themes";
+import { Button, DropdownMenu, Popover } from "@radix-ui/themes";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@src/lib/auth.tsx";
@@ -39,14 +39,19 @@ export function AppSidebar({ collapsed, onToggleCollapse }: AppSidebarProps) {
         ) : (
           <span />
         )}
-        <button
-          type="button"
+        <Button
+          variant="ghost"
           onClick={onToggleCollapse}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-[--gray-11] hover:bg-[--gray-3] hover:text-[--gray-12]"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md"
+          style={{
+            cursor: "pointer",
+            padding: "12px",
+            marginRight: collapsed ? "8px" : "0px",
+          }}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-        </button>
+          {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+        </Button>
       </div>
 
       <div className="flex-1 space-y-3 px-3 py-3">
@@ -130,25 +135,25 @@ export function AppSidebar({ collapsed, onToggleCollapse }: AppSidebarProps) {
               sideOffset={8}
               className="w-[var(--radix-popover-trigger-width)] rounded-xl border border-[#34343d] bg-[#17171d] p-2"
             >
-              <button
-                type="button"
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[--gray-11] transition hover:bg-[--gray-4] hover:text-[--gray-12]"
+              <Link
+                to="/dashboard/profile"
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[--gray-11] transition hover:bg-[--gray-4] hover:bg-blue-500/10 hover:text-[--gray-12]"
               >
                 <User size={14} />
                 Profile
-              </button>
-              <button
-                type="button"
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[--gray-11] transition hover:bg-[--gray-4] hover:text-[--gray-12]"
+              </Link>
+              <Link
+                to="/dashboard/settings"
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[--gray-11] transition hover:bg-[--gray-4] hover:bg-blue-500/10 hover:text-[--gray-12]"
               >
                 <Settings size={14} />
                 Account settings
-              </button>
+              </Link>
               <div className="my-1 h-px w-full bg-[--gray-6]" />
               <button
                 type="button"
                 onClick={() => void handleLogout()}
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-400 transition hover:bg-red-500/10 hover:text-red-300"
+                className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-400 transition hover:bg-red-500/10 hover:text-red-300"
               >
                 <LogOut size={14} />
                 Logout
