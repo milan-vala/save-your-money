@@ -3,6 +3,7 @@ import { RootLayout } from "./layouts/RootLayout.tsx";
 import { Home } from "@src/pages/home.tsx";
 import { Login } from "@src/pages/login.tsx";
 import { Dashboard } from "@src/pages/dashboard.tsx";
+import { LoanAccountCreate } from "@src/pages/loan-account-create.tsx";
 import { AppLayout } from "@src/layouts/AppLayout.tsx";
 import {
   RedirectIfAuthenticated,
@@ -32,6 +33,10 @@ function App() {
           }
         >
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route
+            path="/dashboard/loan-accounts/new"
+            element={<LoanAccountCreate />}
+          />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

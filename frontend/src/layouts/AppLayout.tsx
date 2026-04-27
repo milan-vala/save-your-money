@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Theme } from "@radix-ui/themes";
 import { Outlet } from "react-router-dom";
 import { AppHeader } from "@src/components/app-header.tsx";
+import { AppSidebar } from "@src/components/app-sidebar.tsx";
 
 export function AppLayout() {
   const [isDark, setIsDark] = useState<boolean>(true);
@@ -20,8 +21,13 @@ export function AppLayout() {
           isDark={isDark}
           onToggleTheme={() => setIsDark((prev) => !prev)}
         />
-        <main className="relative z-10">
-          <Outlet />
+        <main className="relative z-10 px-4 py-6 sm:px-6 sm:py-8">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+            <AppSidebar />
+            <div className="min-w-0">
+              <Outlet />
+            </div>
+          </div>
         </main>
       </div>
     </Theme>
