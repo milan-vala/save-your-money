@@ -3,9 +3,11 @@ import { IconButton, Theme } from "@radix-ui/themes";
 import { Moon, Sun } from "lucide-react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { AmbientGlow } from "@src/components/ambient-glow";
+import { useAuth } from "@src/lib/auth.tsx";
 
 export function RootLayout() {
   const [isDark, setIsDark] = useState<boolean>(true);
+  const { isAuthenticated } = useAuth();
 
   return (
     <Theme
@@ -26,28 +28,20 @@ export function RootLayout() {
             </Link>
 
             <div className="flex items-center gap-4">
-              <nav className="flex items-center gap-4 text-sm">
-                <NavLink
-                  to="/"
-                  className={({ isActive }) =>
-                    isActive
-                      ? "font-semibold text-[--accent-11]"
-                      : "text-[--gray-11]"
-                  }
-                >
-                  Home
-                </NavLink>
-                <NavLink
-                  to="/login"
-                  className={({ isActive }) =>
-                    isActive
-                      ? "font-semibold text-[--accent-11]"
-                      : "text-[--gray-11]"
-                  }
-                >
-                  Login
-                </NavLink>
-              </nav>
+              {!isAuthenticated ? (
+                <nav className="flex items-center gap-4 text-sm">
+                  <NavLink
+                    to="/login"
+                    className={({ isActive }) =>
+                      isActive
+                        ? "font-semibold text-[--accent-11]"
+                        : "text-[--gray-11]"
+                    }
+                  >
+                    Login
+                  </NavLink>
+                </nav>
+              ) : null}
 
               <IconButton
                 type="button"

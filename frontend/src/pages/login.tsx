@@ -2,10 +2,12 @@ import { useState } from "react";
 import { GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { getApiBaseUrl } from "@src/lib/api.ts";
+import { useAuth } from "@src/lib/auth.tsx";
 import { getFirebaseAuth, getUserRefreshToken } from "@src/lib/firebase.ts";
 
 export function Login() {
   const navigate = useNavigate();
+  const { refreshSession } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -37,8 +39,9 @@ export function Login() {
         throw new Error(detail || `Session failed (${res.status})`);
       }
 
+      await refreshSession();
       await signOut(auth);
-      navigate("/", { replace: true });
+      navigate("/dashboard", { replace: true });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Sign-in failed");
     } finally {
