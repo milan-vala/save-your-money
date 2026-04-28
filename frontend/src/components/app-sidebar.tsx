@@ -8,8 +8,12 @@ import {
   User,
 } from "lucide-react";
 import { Button, DropdownMenu, Popover } from "@radix-ui/themes";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import {
+  getLoanAccounts,
+  type LoanAccountListItem,
+} from "../../apis/loan-account-apis";
 import { useAuth } from "@src/lib/auth.tsx";
 
 type AppSidebarProps = {
@@ -26,6 +30,26 @@ export function AppSidebar({
   const navigate = useNavigate();
   const { logout } = useAuth();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [loanAccounts, setLoanAccounts] = useState<LoanAccountListItem[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    void (async () => {
+      try {
+        const response = await getLoanAccounts();
+        if (mounted) {
+          setLoanAccounts(response.items);
+        }
+      } catch {
+        if (mounted) {
+          setLoanAccounts([]);
+        }
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   async function handleLogout() {
     await logout();
@@ -60,11 +84,34 @@ export function AppSidebar({
       </div>
 
       <div className="flex-1 space-y-3 px-3 py-3">
-        {!collapsed ? (
+        {!collapsed && loanAccounts.length === 0 ? (
           <p className="px-1 text-sm text-[--gray-11]">
             No loan accounts yet. Create one to start tracking interest, EMI,
             and savings opportunities.
           </p>
+        ) : null}
+
+        {loanAccounts.length > 0 ? (
+          <div className="space-y-1">
+            {loanAccounts.map((account) => (
+              <Link
+                key={account.id}
+                to={`/dashboard/loan-accounts/${account.id}`}
+                className={`flex items-center rounded-lg px-2 py-2 text-sm transition ${
+                  collapsed
+                    ? "justify-center"
+                    : "justify-start truncate text-[--gray-11] hover:bg-[--gray-3]/70 hover:text-[--gray-12]"
+                }`}
+                title={collapsed ? account.accountName : undefined}
+              >
+                {collapsed ? (
+                  <span className="h-2 w-2 rounded-full bg-[--accent-9]" />
+                ) : (
+                  <span className="truncate">{account.accountName}</span>
+                )}
+              </Link>
+            ))}
+          </div>
         ) : null}
 
         <Link

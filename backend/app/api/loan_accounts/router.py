@@ -6,10 +6,15 @@ from typing import Any
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 
 from app.api.auth.deps import get_current_user
-from app.schemas.loan_accounts import CreateLoanAccountResponse, LoanAccountDocument
+from app.schemas.loan_accounts import (
+    CreateLoanAccountResponse,
+    LoanAccountDocument,
+    LoanAccountsListResponse,
+)
 from app.services.firestore_loan_accounts import (
     FirestoreUnavailableError,
     create_loan_account_document,
+    list_loan_accounts_for_user,
 )
 from app.services.loan_analysis_service import (
     LoanAnalysisError,
@@ -20,6 +25,25 @@ from app.services.loan_analysis_service import (
 )
 
 router = APIRouter(prefix="/loan-accounts", tags=["loan-accounts"])
+
+
+@router.get("", response_model=LoanAccountsListResponse)
+async def get_loan_accounts(
+    user: dict[str, Any] = Depends(get_current_user),
+) -> LoanAccountsListResponse:
+    uid = user.get("uid")
+    if not isinstance(uid, str) or not uid:
+        raise HTTPException(status_code=401, detail="Invalid authenticated user")
+    try:
+        items = list_loan_accounts_for_user(user_id=uid)
+        return LoanAccountsListResponse(items=items)
+    except FirestoreUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Could not fetch loan accounts: {exc!s}",
+        ) from exc
 
 
 @router.post(

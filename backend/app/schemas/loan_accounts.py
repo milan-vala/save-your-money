@@ -108,3 +108,14 @@ class LoanAccountDocument(BaseModel):
 
 class CreateLoanAccountResponse(BaseModel):
     id: str = Field(min_length=1)
+
+
+class LoanAccountListItem(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str = Field(min_length=1)
+    account_name: str = Field(alias="accountName", min_length=1)
+
+
+class LoanAccountsListResponse(BaseModel):
+    items: list[LoanAccountListItem] = Field(default_factory=list)

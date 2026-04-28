@@ -10,6 +10,15 @@ export type CreateLoanAccountResponse = {
   id: string;
 };
 
+export type LoanAccountListItem = {
+  id: string;
+  accountName: string;
+};
+
+export type LoanAccountsListResponse = {
+  items: LoanAccountListItem[];
+};
+
 export async function createLoanAccount(
   payload: CreateLoanAccountPayload
 ): Promise<CreateLoanAccountResponse> {
@@ -20,4 +29,8 @@ export async function createLoanAccount(
     formData.append("terms_conditions", payload.termsConditions);
   }
   return API.POST<CreateLoanAccountResponse>("/api/loan-accounts", formData);
+}
+
+export async function getLoanAccounts(): Promise<LoanAccountsListResponse> {
+  return API.GET<LoanAccountsListResponse>("/api/loan-accounts");
 }
