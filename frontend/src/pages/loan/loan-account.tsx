@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { Link, useParams } from "react-router-dom";
 import { notify } from "@src/components/app-toast.tsx";
+import { createLoanAccount } from "../../../apis/loan-account-apis";
 import { LoanAccountForm } from "./loan-account-form.tsx";
 import type { LoanAccountFormValues } from "./types.ts";
 
@@ -12,15 +13,25 @@ export function LoanAccount() {
   const handleSubmit = useCallback(
     async (values: LoanAccountFormValues) => {
       try {
-        // TODO: replace with real API — create vs update based on `mode` / `params.loanAccountId`
+        let createdId: string | null = null;
         if (mode === "create") {
-          // await createLoanAccount(values);
+          if (!values.repaymentPdf) {
+            throw new Error("Loan Repayment Schedule PDF is required.");
+          }
+          const response = await createLoanAccount({
+            accountName: values.accountName,
+            amortizationSchedule: values.repaymentPdf,
+            termsConditions: values.termsPdf,
+          });
+          createdId = response.id;
         } else {
+          // TODO(next phase): wire update API for edit mode using params.loanAccountId.
           // await updateLoanAccount(params.loanAccountId!, values);
         }
 
         const detail = [
           values.accountName.trim(),
+          createdId ? `ID: ${createdId}` : null,
           values.repaymentPdf?.name ?? "no schedule file",
           values.termsPdf
             ? `Terms: ${values.termsPdf.name}`

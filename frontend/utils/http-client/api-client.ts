@@ -28,9 +28,15 @@ export async function POST<T = unknown>(
   endpoint: string,
   payload?: unknown
 ): Promise<T> {
+  const body =
+    payload === undefined
+      ? undefined
+      : payload instanceof FormData
+        ? payload
+        : JSON.stringify(payload);
   return httpClient.request<T>(endpoint, {
     method: "POST",
-    body: payload ? JSON.stringify(payload) : undefined,
+    body,
   }) as Promise<T>;
 }
 

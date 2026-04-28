@@ -169,7 +169,13 @@ httpClient.addInterceptor({
     }
 
     const headers = config.headers as Record<string, string>;
-    if (!headers["Content-Type"] && config.method !== "GET") {
+    const isFormDataBody =
+      typeof FormData !== "undefined" && config.body instanceof FormData;
+    if (
+      !headers["Content-Type"] &&
+      config.method !== "GET" &&
+      !isFormDataBody
+    ) {
       headers["Content-Type"] = "application/json";
     }
 
