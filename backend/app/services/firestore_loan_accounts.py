@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 from firebase_admin import firestore
 from google.api_core.exceptions import FailedPrecondition, InvalidArgument
 
@@ -8,6 +10,10 @@ from app.schemas.loan_accounts import LoanAccountDocument, LoanAccountListItem
 
 
 class FirestoreUnavailableError(RuntimeError):
+    pass
+
+
+class LoanAccountNotFoundError(RuntimeError):
     pass
 
 
@@ -44,3 +50,20 @@ def list_loan_accounts_for_user(*, user_id: str) -> list[LoanAccountListItem]:
 
     records.sort(key=lambda item: str(item[0] or ""), reverse=True)
     return [item for _, item in records]
+
+
+def get_loan_account_for_user(*, user_id: str, loan_account_id: str) -> dict[str, object]:
+    if not firebase_app_ready():
+        raise FirestoreUnavailableError("Firebase is not configured")
+    db = firestore.client()
+    snapshot_any = cast(Any, db.collection("loanAccounts").document(loan_account_id).get())
+    if not cast(bool, getattr(snapshot_any, "exists", False)):
+        raise LoanAccountNotFoundError("Loan account not found")
+
+    data = cast(dict[str, object], getattr(snapshot_any, "to_dict")() or {})
+    if data.get("userId") != user_id:
+        raise LoanAccountNotFoundError("Loan account not found")
+
+    result: dict[str, object] = {"id": cast(str, getattr(snapshot_any, "id"))}
+    result.update(data)
+    return result

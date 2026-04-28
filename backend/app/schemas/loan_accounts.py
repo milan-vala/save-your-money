@@ -119,3 +119,8 @@ class LoanAccountListItem(BaseModel):
 
 class LoanAccountsListResponse(BaseModel):
     items: list[LoanAccountListItem] = Field(default_factory=list)
+
+
+class LoanAccountDetailsResponse(BaseModel):
+    id: str = Field(min_length=1)
+    data: dict[str, Any]

@@ -9,11 +9,14 @@ from app.api.auth.deps import get_current_user
 from app.schemas.loan_accounts import (
     CreateLoanAccountResponse,
     LoanAccountDocument,
+    LoanAccountDetailsResponse,
     LoanAccountsListResponse,
 )
 from app.services.firestore_loan_accounts import (
     FirestoreUnavailableError,
+    LoanAccountNotFoundError,
     create_loan_account_document,
+    get_loan_account_for_user,
     list_loan_accounts_for_user,
 )
 from app.services.loan_analysis_service import (
@@ -25,6 +28,29 @@ from app.services.loan_analysis_service import (
 )
 
 router = APIRouter(prefix="/loan-accounts", tags=["loan-accounts"])
+
+
+@router.get("/{loan_account_id}", response_model=LoanAccountDetailsResponse)
+async def get_loan_account_by_id(
+    loan_account_id: str,
+    user: dict[str, Any] = Depends(get_current_user),
+) -> LoanAccountDetailsResponse:
+    uid = user.get("uid")
+    if not isinstance(uid, str) or not uid:
+        raise HTTPException(status_code=401, detail="Invalid authenticated user")
+    try:
+        data = get_loan_account_for_user(user_id=uid, loan_account_id=loan_account_id)
+        document_id = str(data.pop("id", loan_account_id))
+        return LoanAccountDetailsResponse(id=document_id, data=data)
+    except LoanAccountNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except FirestoreUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Could not fetch loan account details: {exc!s}",
+        ) from exc
 
 
 @router.get("", response_model=LoanAccountsListResponse)

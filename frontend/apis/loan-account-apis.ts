@@ -19,6 +19,11 @@ export type LoanAccountsListResponse = {
   items: LoanAccountListItem[];
 };
 
+export type LoanAccountDetailsResponse = {
+  id: string;
+  data: Record<string, unknown>;
+};
+
 export async function createLoanAccount(
   payload: CreateLoanAccountPayload
 ): Promise<CreateLoanAccountResponse> {
@@ -33,4 +38,10 @@ export async function createLoanAccount(
 
 export async function getLoanAccounts(): Promise<LoanAccountsListResponse> {
   return API.GET<LoanAccountsListResponse>("/api/loan-accounts");
+}
+
+export async function getLoanAccountById(
+  id: string
+): Promise<LoanAccountDetailsResponse> {
+  return API.GET<LoanAccountDetailsResponse>(`/api/loan-accounts/${id}`);
 }
