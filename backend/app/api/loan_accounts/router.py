@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
+from fastapi.responses import JSONResponse
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 
 from app.api.auth.deps import get_current_user
@@ -79,13 +80,17 @@ async def get_loan_accounts(
 )
 async def create_loan_account(
     account_name: str = Form(...),
+    monthly_due_date: int = Form(...),
+    current_month_emi_paid: bool = Form(False),
     amortization_schedule: UploadFile = File(...),
     terms_conditions: UploadFile | None = File(None),
     user: dict[str, Any] = Depends(get_current_user),
-) -> CreateLoanAccountResponse:
+) -> CreateLoanAccountResponse | JSONResponse:
     account_name = account_name.strip()
     if not account_name:
         raise HTTPException(status_code=400, detail="account_name is required")
+    if monthly_due_date < 1 or monthly_due_date > 31:
+        raise HTTPException(status_code=400, detail="monthly_due_date must be 1..31")
 
     uid = user.get("uid")
     if not isinstance(uid, str) or not uid:
@@ -107,6 +112,8 @@ async def create_loan_account(
 
         analysis = await analyze_loan_documents(
             account_name=account_name,
+            monthly_due_date=monthly_due_date,
+            current_month_emi_paid=current_month_emi_paid,
             amortization_schedule_pdf=amortization_pdf,
             terms_conditions_pdf=terms_pdf,
         )
@@ -115,6 +122,8 @@ async def create_loan_account(
         doc = LoanAccountDocument(
             userId=uid,
             accountName=account_name,
+            monthlyDueDate=monthly_due_date,
+            currentMonthEmiPaid=current_month_emi_paid,
             amortizationScheduleFile=amortization_meta,
             termsConditionsFile=terms_meta,
             analysis=analysis,
@@ -129,7 +138,32 @@ async def create_loan_account(
     except LoanConfigError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except LoanAnalysisError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        debug_detail = str(exc)
+        normalized = debug_detail.lower()
+        is_high_demand = (
+            "503" in normalized
+            or "unavailable" in normalized
+            or "high demand" in normalized
+            or "experiencing high demand" in normalized
+        )
+        if is_high_demand:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "detail": debug_detail,
+                    "userMessage": (
+                        "Our AI service is experiencing high demand right now. "
+                        "Please try again in a minute."
+                    ),
+                },
+            )
+        return JSONResponse(
+            status_code=422,
+            content={
+                "detail": debug_detail,
+                "userMessage": "We could not analyze the uploaded documents. Please review the files and try again.",
+            },
+        )
     except FirestoreUnavailableError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except HTTPException:

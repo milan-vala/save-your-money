@@ -87,6 +87,7 @@ class HttpClient {
           .catch(() => ({ detail: response.statusText }));
 
         const detail =
+          errorData.userMessage ||
           errorData.detail ||
           errorData.error ||
           response.statusText ||

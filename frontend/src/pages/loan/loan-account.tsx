@@ -18,8 +18,13 @@ export function LoanAccount() {
           if (!values.repaymentPdf) {
             throw new Error("Loan Repayment Schedule PDF is required.");
           }
+          if (values.monthlyDueDate === "") {
+            throw new Error("Monthly EMI due date is required.");
+          }
           const response = await createLoanAccount({
             accountName: values.accountName,
+            monthlyDueDate: Number(values.monthlyDueDate),
+            currentMonthEmiPaid: values.currentMonthEmiPaid,
             amortizationSchedule: values.repaymentPdf,
             termsConditions: values.termsPdf,
           });

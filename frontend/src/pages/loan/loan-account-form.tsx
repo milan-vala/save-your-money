@@ -8,6 +8,14 @@ import type { LoanAccountFormProps, LoanAccountFormValues } from "./types.ts";
 
 const loanAccountSchema = yup.object({
   accountName: yup.string().trim().required("Account name is required."),
+  monthlyDueDate: yup
+    .number()
+    .typeError("Monthly EMI due date is required.")
+    .required("Monthly EMI due date is required.")
+    .integer("Monthly EMI due date must be a whole number.")
+    .min(1, "Monthly EMI due date must be between 1 and 31.")
+    .max(31, "Monthly EMI due date must be between 1 and 31."),
+  currentMonthEmiPaid: yup.boolean().default(false),
   repaymentPdf: yup
     .mixed<File>()
     .required("Loan Repayment Schedule PDF is required.")
@@ -42,6 +50,8 @@ function formatFormikFieldError(error: unknown): string | undefined {
 function emptyValues(): LoanAccountFormValues {
   return {
     accountName: "",
+    monthlyDueDate: "",
+    currentMonthEmiPaid: false,
     repaymentPdf: null,
     termsPdf: null,
   };
@@ -62,6 +72,9 @@ export function LoanAccountForm({
       ...base,
       ...initialValuesProp,
       accountName: initialValuesProp.accountName ?? base.accountName,
+      monthlyDueDate: initialValuesProp.monthlyDueDate ?? base.monthlyDueDate,
+      currentMonthEmiPaid:
+        initialValuesProp.currentMonthEmiPaid ?? base.currentMonthEmiPaid,
       repaymentPdf: initialValuesProp.repaymentPdf ?? base.repaymentPdf,
       termsPdf: initialValuesProp.termsPdf ?? base.termsPdf,
     };
@@ -81,6 +94,9 @@ export function LoanAccountForm({
 
   const showAccountNameError =
     Boolean(formik.touched.accountName) && Boolean(formik.errors.accountName);
+  const showMonthlyDueDateError =
+    Boolean(formik.touched.monthlyDueDate) &&
+    Boolean(formik.errors.monthlyDueDate);
   const showRepaymentError =
     Boolean(formik.touched.repaymentPdf) && Boolean(formik.errors.repaymentPdf);
 
@@ -124,6 +140,67 @@ export function LoanAccountForm({
               {formatFormikFieldError(formik.errors.accountName)}
             </p>
           ) : null}
+        </div>
+
+        <div className="rounded-xl bg-[--gray-3]/45 p-3">
+          <label
+            htmlFor="monthly-due-date"
+            className="mb-2 block text-sm font-medium text-[--gray-12]"
+          >
+            Monthly EMI Due Date (Day of month)
+          </label>
+          <input
+            id="monthly-due-date"
+            name="monthlyDueDate"
+            type="number"
+            min={1}
+            max={31}
+            value={formik.values.monthlyDueDate}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            placeholder="e.g. 5, 10, 25"
+            aria-invalid={showMonthlyDueDateError}
+            aria-describedby={
+              showMonthlyDueDateError ? "monthly-due-date-error" : undefined
+            }
+            className={`w-full rounded-lg border bg-[--gray-1]/60 px-3 py-2.5 text-sm text-[--gray-12] outline-none placeholder:text-[--gray-10] focus:border-[--accent-8] ${
+              showMonthlyDueDateError
+                ? "border-red-500/70"
+                : "border-[--gray-6]/60"
+            }`}
+          />
+          <p className="mt-2 text-xs text-[--gray-11]">
+            Required. Enter a day from 1 to 31.
+          </p>
+          {showMonthlyDueDateError ? (
+            <p
+              id="monthly-due-date-error"
+              className="mt-2 text-sm text-red-600 dark:text-red-400"
+              role="alert"
+            >
+              {formatFormikFieldError(formik.errors.monthlyDueDate)}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="rounded-xl bg-[--gray-3]/45 p-3">
+          <label
+            htmlFor="current-month-emi-paid"
+            className="flex cursor-pointer items-center justify-between gap-3"
+          >
+            <span className="text-sm font-medium text-[--gray-12]">
+              Has this month&apos;s EMI already been paid?
+            </span>
+            <input
+              id="current-month-emi-paid"
+              name="currentMonthEmiPaid"
+              type="checkbox"
+              checked={formik.values.currentMonthEmiPaid}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              className="h-4 w-4 rounded border-[--gray-6] accent-[--accent-9]"
+            />
+          </label>
         </div>
 
         <div className="rounded-xl bg-[--gray-3]/45 p-3">

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from calendar import monthrange
 from datetime import UTC, date, datetime
 from typing import Any
 
@@ -73,6 +74,13 @@ def _to_optional_float(value: Any) -> float | None:
     return None
 
 
+def _pick_first(raw: dict[str, Any], *keys: str) -> Any:
+    for key in keys:
+        if key in raw and raw.get(key) is not None:
+            return raw.get(key)
+    return None
+
+
 def _parse_date(value: Any) -> date | None:
     if value is None:
         return None
@@ -134,26 +142,35 @@ def _normalize_amortization_rows(rows: list[dict[str, Any]]) -> list[Amortizatio
                 installment_number = int(str(installment_number).strip())
             except ValueError as exc:
                 raise LoanAnalysisError("Invalid installment_number value") from exc
+        tax_raw = _pick_first(
+            raw,
+            "tax_component",
+            "tax",
+            "taxes",
+            "tax_amount",
+            "applicable_taxes",
+            "applicable_tax",
+            "gst",
+        )
         normalized.append(
             AmortizationRow(
                 installment_number=installment_number,
-                due_date=_parse_date(raw.get("due_date") or raw.get("date")),
+                due_date=_parse_date(_pick_first(raw, "due_date", "date", "emi_date")),
                 emi_amount=_to_float(
-                    raw.get("emi_amount") or raw.get("emi") or raw.get("installment"),
+                    _pick_first(raw, "emi_amount", "emi", "installment", "monthly_due"),
                     field_name=f"amortization_schedule[{idx}].emi_amount",
                 ),
                 principal_component=_to_float(
-                    raw.get("principal_component") or raw.get("principal"),
+                    _pick_first(raw, "principal_component", "principal"),
                     field_name=f"amortization_schedule[{idx}].principal_component",
                 ),
                 interest_component=_to_float(
-                    raw.get("interest_component") or raw.get("interest"),
+                    _pick_first(raw, "interest_component", "interest"),
                     field_name=f"amortization_schedule[{idx}].interest_component",
                 ),
+                tax_component=_to_optional_float(tax_raw) or 0.0,
                 balance_after_payment=_to_optional_float(
-                    raw.get("balance_after_payment")
-                    or raw.get("balance")
-                    or raw.get("outstanding")
+                    _pick_first(raw, "balance_after_payment", "balance", "outstanding")
                 ),
                 payment_status=(
                     str(raw.get("payment_status")).strip().lower()
@@ -173,51 +190,93 @@ def _normalize_amortization_rows(rows: list[dict[str, Any]]) -> list[Amortizatio
     )
 
 
-def _calculate_metrics(extraction: LoanExtraction) -> LoanComputedMetrics:
+def _calculate_metrics(
+    extraction: LoanExtraction,
+    *,
+    monthly_due_date: int,
+    current_month_emi_paid: bool,
+) -> LoanComputedMetrics:
     today = date.today()
     rows = extraction.amortization_schedule
+    due_day = min(max(monthly_due_date, 1), monthrange(today.year, today.month)[1])
+    current_cycle_due_date = date(today.year, today.month, due_day)
+
+    explicit_status_present = any(
+        row.payment_status in {"paid", "completed", "unpaid", "pending", "future", "remaining"}
+        for row in rows
+    )
+
+    due_dates = [row.due_date for row in rows if row.due_date is not None]
+    due_before_count = sum(1 for d in due_dates if d < current_cycle_due_date)
+    due_on_cycle_count = sum(1 for d in due_dates if d == current_cycle_due_date)
+    paid_count_by_cycle = due_before_count + (
+        due_on_cycle_count if current_month_emi_paid and today >= current_cycle_due_date else 0
+    )
 
     def is_paid(row: AmortizationRow) -> bool:
         if row.payment_status in {"paid", "completed"}:
             return True
         if row.payment_status in {"unpaid", "pending", "future", "remaining"}:
             return False
-        return bool(row.due_date and row.due_date <= today)
+        if row.due_date:
+            if row.due_date < current_cycle_due_date:
+                return True
+            if row.due_date > current_cycle_due_date:
+                return False
+            return current_month_emi_paid and today >= current_cycle_due_date
+        if row.installment_number is not None and paid_count_by_cycle > 0:
+            return row.installment_number <= paid_count_by_cycle
+        return False
 
     paid_rows = [row for row in rows if is_paid(row)]
     remaining_rows = [row for row in rows if not is_paid(row)]
 
     principal_paid = sum(r.principal_component for r in paid_rows)
     interest_paid = sum(r.interest_component for r in paid_rows)
-    total_paid = sum(r.emi_amount for r in paid_rows)
+    taxes_paid = sum(r.tax_component for r in paid_rows)
 
     principal_remaining = sum(r.principal_component for r in remaining_rows)
     interest_remaining = sum(r.interest_component for r in remaining_rows)
-    total_remaining = sum(r.emi_amount for r in remaining_rows)
+    taxes_remaining = sum(r.tax_component for r in remaining_rows)
 
-    current_balance = 0.0
+    outstanding_principal = max(principal_remaining, 0.0)
+    current_balance = outstanding_principal
     if paid_rows and paid_rows[-1].balance_after_payment is not None:
         current_balance = paid_rows[-1].balance_after_payment or 0.0
-    elif remaining_rows and extraction.loan_details.original_principal is not None:
+    elif outstanding_principal > 0:
+        current_balance = outstanding_principal
+    elif extraction.loan_details.original_principal is not None:
         current_balance = extraction.loan_details.original_principal
+    elif rows and rows[-1].balance_after_payment is not None:
+        current_balance = rows[-1].balance_after_payment or 0.0
     elif rows and rows[0].balance_after_payment is not None:
         current_balance = rows[0].balance_after_payment or 0.0
 
-    foreclosure_rate = extraction.loan_details.foreclosure_charge_rate or 0.0
+    processing_fee_paid = extraction.loan_details.processing_fee or 0.0
+    total_paid = principal_paid + interest_paid + taxes_paid + processing_fee_paid
+    total_remaining = principal_remaining + interest_remaining + taxes_remaining
+
+    foreclosure_rate = extraction.loan_details.foreclosure_charge_rate
+    if foreclosure_rate is None:
+        foreclosure_rate = 3.0
     foreclosure_flat = extraction.loan_details.foreclosure_flat_fee or 0.0
-    foreclosure_charges = (principal_remaining * foreclosure_rate / 100.0) + foreclosure_flat
-    foreclosure_total = principal_remaining + foreclosure_charges
-    interest_savings = interest_remaining - foreclosure_charges
+    foreclosure_charges = (max(current_balance, 0.0) * foreclosure_rate / 100.0) + foreclosure_flat
+    foreclosure_total = max(current_balance, 0.0) + foreclosure_charges
+    savings_on_foreclosure = total_remaining - foreclosure_total
 
     assumptions = [
-        "Installment paid status is inferred from payment_status when present.",
-        "When payment_status is missing, installments with due_date <= today are treated as paid.",
-        "Foreclosure savings is estimated as remaining scheduled interest minus foreclosure charges.",
+        "Installments are classified using payment_status when present; otherwise due-date cycle logic is applied.",
+        "Current-cycle classification uses monthly_due_date and current_month_emi_paid.",
+        "Processing fee is treated as one-time upfront paid fee.",
     ]
+    if foreclosure_rate == 3.0 and extraction.loan_details.foreclosure_charge_rate is None:
+        assumptions.append("Foreclosure charge rate missing in documents; applied fallback of 3.0%.")
     if any(row.balance_after_payment is None for row in rows):
         assumptions.append(
             "Some balance_after_payment values were missing; current balance uses fallback logic."
         )
+    if not explicit_status_present:
+        assumptions.append("No explicit payment_status in rows; paid/remaining inferred from due cycle.")
 
     return LoanComputedMetrics(
         as_of_date=today,
@@ -226,6 +285,9 @@ def _calculate_metrics(extraction: LoanExtraction) -> LoanComputedMetrics:
         remaining_installments=len(remaining_rows),
         principal_paid_to_date=round(principal_paid, 2),
         interest_paid_to_date=round(interest_paid, 2),
+        total_taxes_paid=round(taxes_paid, 2),
+        total_taxes_remaining=round(taxes_remaining, 2),
+        processing_fee_paid=round(processing_fee_paid, 2),
         total_paid_to_date=round(total_paid, 2),
         principal_remaining=round(principal_remaining, 2),
         interest_remaining=round(interest_remaining, 2),
@@ -234,7 +296,7 @@ def _calculate_metrics(extraction: LoanExtraction) -> LoanComputedMetrics:
         scheduled_total_interest=round(sum(r.interest_component for r in rows), 2),
         estimated_foreclosure_charges=round(max(foreclosure_charges, 0.0), 2),
         estimated_foreclosure_total=round(max(foreclosure_total, 0.0), 2),
-        estimated_interest_savings_on_foreclosure=round(interest_savings, 2),
+        estimated_savings_on_foreclosure=round(savings_on_foreclosure, 2),
         assumptions=assumptions,
     )
 
@@ -271,6 +333,8 @@ async def read_pdf_upload(
 async def analyze_loan_documents(
     *,
     account_name: str,
+    monthly_due_date: int,
+    current_month_emi_paid: bool,
     amortization_schedule_pdf: bytes,
     terms_conditions_pdf: bytes | None,
 ) -> LoanAnalysisResult:
@@ -304,18 +368,24 @@ Analyze the provided loan PDFs and produce STRICT JSON only with this structure:
       "emi_amount": number,
       "principal_component": number,
       "interest_component": number,
+      "tax_component": number,
       "balance_after_payment": number|null,
       "payment_status": "paid|unpaid|future|remaining|completed|pending"|null
     }}
   ]
 }}
 Rules:
-- Use amortization schedule values from the PDF table.
-- Include every row from the amortization table.
-- Keep numeric fields as numbers (not strings).
-- If uncertain, return null for optional fields.
-- For statement-style documents where balance is not explicitly present, keep balance_after_payment as null.
+- Support diverse lender formats (SBI Card amortization schedules, Sammaan Capital account statements, and similar future formats).
+- Always extract installment-level principal, interest, EMI, and taxes where available.
+- Taxes can appear as tax/GST/applicable tax columns; map to tax_component, default to 0 when absent.
+- Include every amortization installment row you can infer from the schedule/statement.
+- Keep numeric fields as numbers (not strings); remove commas and currency symbols.
+- If uncertain, return null only for optional fields.
+- For statement-style documents where balance is not explicit, set balance_after_payment to null.
+- Extract processing_fee from terms/statement when available.
 - Account name context: {account_name}
+- User-provided monthly EMI due date (day): {monthly_due_date}
+- User confirms current month EMI paid: {current_month_emi_paid}
 """.strip()
 
     async def upload_gemini_file(
@@ -425,7 +495,9 @@ Rules:
             json=payload,
         )
     if response.status_code >= 400:
-        raise LoanAnalysisError("Gemini analysis failed")
+        raise LoanAnalysisError(
+            f"Gemini analysis failed ({response.status_code}): {response.text[:300]}"
+        )
 
     data = response.json()
     parts_out = (
@@ -458,7 +530,11 @@ Rules:
     except ValidationError as exc:
         raise LoanAnalysisError("Gemini response did not match expected schema") from exc
 
-    computed = _calculate_metrics(extraction)
+    computed = _calculate_metrics(
+        extraction,
+        monthly_due_date=monthly_due_date,
+        current_month_emi_paid=current_month_emi_paid,
+    )
     return LoanAnalysisResult(
         extraction=extraction,
         computed=computed,

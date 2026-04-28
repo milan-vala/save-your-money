@@ -33,6 +33,7 @@ class AmortizationRow(BaseModel):
     emi_amount: float = Field(ge=0)
     principal_component: float = Field(ge=0)
     interest_component: float = Field(ge=0)
+    tax_component: float = Field(default=0, ge=0)
     balance_after_payment: float | None = Field(default=None, ge=0)
     payment_status: str | None = None
 
@@ -49,6 +50,9 @@ class LoanComputedMetrics(BaseModel):
     remaining_installments: int = Field(ge=0)
     principal_paid_to_date: float = Field(ge=0)
     interest_paid_to_date: float = Field(ge=0)
+    total_taxes_paid: float = Field(ge=0)
+    total_taxes_remaining: float = Field(ge=0)
+    processing_fee_paid: float = Field(ge=0)
     total_paid_to_date: float = Field(ge=0)
     principal_remaining: float = Field(ge=0)
     interest_remaining: float = Field(ge=0)
@@ -57,7 +61,7 @@ class LoanComputedMetrics(BaseModel):
     scheduled_total_interest: float = Field(ge=0)
     estimated_foreclosure_charges: float = Field(ge=0)
     estimated_foreclosure_total: float = Field(ge=0)
-    estimated_interest_savings_on_foreclosure: float
+    estimated_savings_on_foreclosure: float
     assumptions: list[str] = Field(default_factory=list)
 
 
@@ -88,6 +92,8 @@ class LoanAccountDocument(BaseModel):
 
     user_id: str = Field(alias="userId", min_length=1)
     account_name: str = Field(alias="accountName", min_length=1)
+    monthly_due_date: int = Field(alias="monthlyDueDate", ge=1, le=31)
+    current_month_emi_paid: bool = Field(alias="currentMonthEmiPaid", default=False)
     amortization_schedule_file: UploadedFileMeta = Field(alias="amortizationScheduleFile")
     terms_conditions_file: UploadedFileMeta | None = Field(
         default=None, alias="termsConditionsFile"

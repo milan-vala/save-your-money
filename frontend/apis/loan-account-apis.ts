@@ -2,6 +2,8 @@ import { API } from "../utils/http-client";
 
 export type CreateLoanAccountPayload = {
   accountName: string;
+  monthlyDueDate: number;
+  currentMonthEmiPaid?: boolean;
   amortizationSchedule: File;
   termsConditions?: File | null;
 };
@@ -29,6 +31,11 @@ export async function createLoanAccount(
 ): Promise<CreateLoanAccountResponse> {
   const formData = new FormData();
   formData.append("account_name", payload.accountName.trim());
+  formData.append("monthly_due_date", String(payload.monthlyDueDate));
+  formData.append(
+    "current_month_emi_paid",
+    payload.currentMonthEmiPaid ? "true" : "false"
+  );
   formData.append("amortization_schedule", payload.amortizationSchedule);
   if (payload.termsConditions) {
     formData.append("terms_conditions", payload.termsConditions);

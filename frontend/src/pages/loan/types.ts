@@ -2,6 +2,8 @@ export type LoanAccountMode = "create" | "edit";
 
 export type LoanAccountFormValues = {
   accountName: string;
+  monthlyDueDate: number | "";
+  currentMonthEmiPaid: boolean;
   repaymentPdf: File | null;
   termsPdf: File | null;
 };
