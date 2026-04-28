@@ -200,36 +200,26 @@ def _calculate_metrics(
     rows = extraction.amortization_schedule
     due_day = min(max(monthly_due_date, 1), monthrange(today.year, today.month)[1])
     current_cycle_due_date = date(today.year, today.month, due_day)
-
-    explicit_status_present = any(
-        row.payment_status in {"paid", "completed", "unpaid", "pending", "future", "remaining"}
-        for row in rows
-    )
-
-    due_dates = [row.due_date for row in rows if row.due_date is not None]
-    due_before_count = sum(1 for d in due_dates if d < current_cycle_due_date)
-    due_on_cycle_count = sum(1 for d in due_dates if d == current_cycle_due_date)
-    paid_count_by_cycle = due_before_count + (
-        due_on_cycle_count if current_month_emi_paid and today >= current_cycle_due_date else 0
-    )
-
-    def is_paid(row: AmortizationRow) -> bool:
-        if row.payment_status in {"paid", "completed"}:
-            return True
-        if row.payment_status in {"unpaid", "pending", "future", "remaining"}:
-            return False
+    # Count how many installments are due based on the requested due-cycle logic.
+    paid_count = 0
+    for row in rows:
         if row.due_date:
-            if row.due_date < current_cycle_due_date:
-                return True
-            if row.due_date > current_cycle_due_date:
-                return False
-            return current_month_emi_paid and today >= current_cycle_due_date
-        if row.installment_number is not None and paid_count_by_cycle > 0:
-            return row.installment_number <= paid_count_by_cycle
-        return False
+            if row.due_date < current_cycle_due_date or (
+                row.due_date == current_cycle_due_date and current_month_emi_paid
+            ):
+                paid_count += 1
+            else:
+                break
+        else:
+            # Fallback when due_date is missing in extracted schedule rows.
+            if row.installment_number and row.installment_number <= paid_count + 1:
+                paid_count += 1
+            else:
+                break
 
-    paid_rows = [row for row in rows if is_paid(row)]
-    remaining_rows = [row for row in rows if not is_paid(row)]
+    paid_count = min(max(paid_count, 0), len(rows))
+    paid_rows = rows[:paid_count]
+    remaining_rows = rows[paid_count:]
 
     principal_paid = sum(r.principal_component for r in paid_rows)
     interest_paid = sum(r.interest_component for r in paid_rows)
@@ -265,8 +255,8 @@ def _calculate_metrics(
     savings_on_foreclosure = total_remaining - foreclosure_total
 
     assumptions = [
-        "Installments are classified using payment_status when present; otherwise due-date cycle logic is applied.",
-        "Current-cycle classification uses monthly_due_date and current_month_emi_paid.",
+        "Installment classification is based on due-cycle rules using monthly_due_date and current_month_emi_paid.",
+        "Rows are treated as schedule-ordered; paid installments are counted sequentially from the start.",
         "Processing fee is treated as one-time upfront paid fee.",
     ]
     if foreclosure_rate == 3.0 and extraction.loan_details.foreclosure_charge_rate is None:
@@ -275,9 +265,6 @@ def _calculate_metrics(
         assumptions.append(
             "Some balance_after_payment values were missing; current balance uses fallback logic."
         )
-    if not explicit_status_present:
-        assumptions.append("No explicit payment_status in rows; paid/remaining inferred from due cycle.")
-
     return LoanComputedMetrics(
         as_of_date=today,
         total_installments=len(rows),
