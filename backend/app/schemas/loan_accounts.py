@@ -61,9 +61,25 @@ class LoanComputedMetrics(BaseModel):
     assumptions: list[str] = Field(default_factory=list)
 
 
+class GeminiFileRef(BaseModel):
+    name: str
+    uri: str
+    mime_type: str
+    display_name: str | None = None
+    size_bytes: int | None = None
+
+
+class GeminiProcessingMetadata(BaseModel):
+    mode: str = "files_api"
+    model: str
+    analyzed_at: datetime
+    uploaded_files: list[GeminiFileRef] = Field(default_factory=list)
+
+
 class LoanAnalysisResult(BaseModel):
     extraction: LoanExtraction
     computed: LoanComputedMetrics
+    processing_metadata: GeminiProcessingMetadata | None = None
     raw_model_output: dict[str, Any] | None = None
 
 

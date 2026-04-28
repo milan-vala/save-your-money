@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_ignore_empty=True)
 
     gemini_api_key: str | None = None
+    gemini_model: str = "gemini-2.5-flash"
     environment: str = "development"
 
     firebase_credentials_path: str | None = None

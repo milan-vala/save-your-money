@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import base64
 import json
 from datetime import UTC, date, datetime
 from typing import Any
@@ -12,6 +11,8 @@ from pydantic import ValidationError
 from app.core.config import settings
 from app.schemas.loan_accounts import (
     AmortizationRow,
+    GeminiFileRef,
+    GeminiProcessingMetadata,
     LoanAnalysisResult,
     LoanComputedMetrics,
     LoanExtraction,
@@ -19,10 +20,8 @@ from app.schemas.loan_accounts import (
     UploadedFileMeta,
 )
 
-GEMINI_ENDPOINT = (
-    "https://generativelanguage.googleapis.com/v1beta/models/"
-    "gemini-2.5-flash:generateContent"
-)
+GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta"
+GEMINI_UPLOAD_BASE = "https://generativelanguage.googleapis.com/upload/v1beta"
 
 
 class LoanInputError(ValueError):
@@ -37,6 +36,14 @@ class LoanAnalysisError(RuntimeError):
     pass
 
 
+def _gemini_generate_endpoint(model: str) -> str:
+    return f"{GEMINI_API_BASE}/models/{model}:generateContent"
+
+
+def _gemini_files_upload_endpoint() -> str:
+    return f"{GEMINI_UPLOAD_BASE}/files"
+
+
 def _to_float(value: Any, *, field_name: str) -> float:
     if isinstance(value, (int, float)):
         return float(value)
@@ -48,6 +55,22 @@ def _to_float(value: Any, *, field_name: str) -> float:
             except ValueError as exc:
                 raise LoanAnalysisError(f"Invalid numeric value for {field_name}") from exc
     raise LoanAnalysisError(f"Missing numeric value for {field_name}")
+
+
+def _to_optional_float(value: Any) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        cleaned = value.replace(",", "").replace("₹", "").strip()
+        if not cleaned:
+            return None
+        try:
+            return float(cleaned)
+        except ValueError:
+            return None
+    return None
 
 
 def _parse_date(value: Any) -> date | None:
@@ -72,13 +95,29 @@ def _parse_date(value: Any) -> date | None:
 def _extract_json_object(text: str) -> dict[str, Any]:
     candidate = text.strip()
     if candidate.startswith("```"):
-        candidate = candidate.strip("`")
-        if candidate.startswith("json"):
+        lines = candidate.splitlines()
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip().startswith("```"):
+            lines = lines[:-1]
+        candidate = "\n".join(lines).strip()
+        if candidate.lower().startswith("json"):
             candidate = candidate[4:].strip()
     try:
         parsed = json.loads(candidate)
     except json.JSONDecodeError as exc:
         raise LoanAnalysisError("Model output was not valid JSON") from exc
+    if isinstance(parsed, list):
+        if parsed and isinstance(parsed[0], dict):
+            parsed = parsed[0]
+        else:
+            raise LoanAnalysisError("Model output JSON must be an object")
+    if isinstance(parsed, dict):
+        for wrapper_key in ("result", "data", "loan_analysis", "analysis"):
+            wrapped = parsed.get(wrapper_key)
+            if isinstance(wrapped, dict):
+                parsed = wrapped
+                break
     if not isinstance(parsed, dict):
         raise LoanAnalysisError("Model output JSON must be an object")
     return parsed
@@ -111,18 +150,11 @@ def _normalize_amortization_rows(rows: list[dict[str, Any]]) -> list[Amortizatio
                     raw.get("interest_component") or raw.get("interest"),
                     field_name=f"amortization_schedule[{idx}].interest_component",
                 ),
-                balance_after_payment=_to_float(
+                balance_after_payment=_to_optional_float(
                     raw.get("balance_after_payment")
                     or raw.get("balance")
-                    or raw.get("outstanding"),
-                    field_name=f"amortization_schedule[{idx}].balance_after_payment",
-                )
-                if (
-                    raw.get("balance_after_payment") is not None
-                    or raw.get("balance") is not None
-                    or raw.get("outstanding") is not None
-                )
-                else None,
+                    or raw.get("outstanding")
+                ),
                 payment_status=(
                     str(raw.get("payment_status")).strip().lower()
                     if raw.get("payment_status") is not None
@@ -182,6 +214,10 @@ def _calculate_metrics(extraction: LoanExtraction) -> LoanComputedMetrics:
         "When payment_status is missing, installments with due_date <= today are treated as paid.",
         "Foreclosure savings is estimated as remaining scheduled interest minus foreclosure charges.",
     ]
+    if any(row.balance_after_payment is None for row in rows):
+        assumptions.append(
+            "Some balance_after_payment values were missing; current balance uses fallback logic."
+        )
 
     return LoanComputedMetrics(
         as_of_date=today,
@@ -241,6 +277,7 @@ async def analyze_loan_documents(
     api_key = settings.gemini_api_key
     if not api_key:
         raise LoanConfigError("GEMINI_API_KEY is not configured")
+    model = settings.gemini_model.strip() or "gemini-2.5-flash"
 
     prompt = f"""
 You are a financial document extraction system.
@@ -277,39 +314,113 @@ Rules:
 - Include every row from the amortization table.
 - Keep numeric fields as numbers (not strings).
 - If uncertain, return null for optional fields.
+- For statement-style documents where balance is not explicitly present, keep balance_after_payment as null.
 - Account name context: {account_name}
 """.strip()
 
-    parts: list[dict[str, Any]] = [{"text": prompt}]
-    parts.append(
-        {
-            "inline_data": {
-                "mime_type": "application/pdf",
-                "data": base64.b64encode(amortization_schedule_pdf).decode("utf-8"),
-            }
-        }
-    )
-    if terms_conditions_pdf:
+    async def upload_gemini_file(
+        *,
+        client: httpx.AsyncClient,
+        file_bytes: bytes,
+        display_name: str,
+        mime_type: str = "application/pdf",
+    ) -> GeminiFileRef:
+        start_response = await client.post(
+            _gemini_files_upload_endpoint(),
+            params={"key": api_key},
+            headers={
+                "X-Goog-Upload-Protocol": "resumable",
+                "X-Goog-Upload-Command": "start",
+                "X-Goog-Upload-Header-Content-Length": str(len(file_bytes)),
+                "X-Goog-Upload-Header-Content-Type": mime_type,
+                "Content-Type": "application/json",
+            },
+            json={"file": {"display_name": display_name}},
+        )
+        if start_response.status_code >= 400:
+            raise LoanAnalysisError("Gemini file upload initialization failed")
+
+        upload_url = start_response.headers.get("X-Goog-Upload-URL")
+        if not upload_url:
+            raise LoanAnalysisError("Gemini did not return file upload URL")
+
+        finalize_response = await client.post(
+            upload_url,
+            headers={
+                "X-Goog-Upload-Offset": "0",
+                "X-Goog-Upload-Command": "upload, finalize",
+                "Content-Length": str(len(file_bytes)),
+                "Content-Type": mime_type,
+            },
+            content=file_bytes,
+        )
+        if finalize_response.status_code >= 400:
+            raise LoanAnalysisError("Gemini file upload finalization failed")
+
+        payload = finalize_response.json()
+        file_obj = payload.get("file")
+        if not isinstance(file_obj, dict):
+            raise LoanAnalysisError("Gemini file upload response missing file metadata")
+        name = file_obj.get("name")
+        uri = file_obj.get("uri")
+        out_mime_type = file_obj.get("mimeType") or mime_type
+        if not isinstance(name, str) or not isinstance(uri, str):
+            raise LoanAnalysisError("Gemini file metadata was incomplete")
+        size_bytes = file_obj.get("sizeBytes")
+        return GeminiFileRef(
+            name=name,
+            uri=uri,
+            mime_type=out_mime_type,
+            display_name=file_obj.get("displayName"),
+            size_bytes=int(size_bytes) if isinstance(size_bytes, str) and size_bytes.isdigit() else None,
+        )
+
+    uploaded_files: list[GeminiFileRef] = []
+
+    async with httpx.AsyncClient(timeout=180.0) as client:
+        amortization_ref = await upload_gemini_file(
+            client=client,
+            file_bytes=amortization_schedule_pdf,
+            display_name=f"{account_name}-amortization-schedule",
+        )
+        uploaded_files.append(amortization_ref)
+        terms_ref: GeminiFileRef | None = None
+        if terms_conditions_pdf:
+            terms_ref = await upload_gemini_file(
+                client=client,
+                file_bytes=terms_conditions_pdf,
+                display_name=f"{account_name}-terms-conditions",
+            )
+            uploaded_files.append(terms_ref)
+
+        parts: list[dict[str, Any]] = [{"text": prompt}]
         parts.append(
             {
-                "inline_data": {
-                    "mime_type": "application/pdf",
-                    "data": base64.b64encode(terms_conditions_pdf).decode("utf-8"),
+                "file_data": {
+                    "mime_type": amortization_ref.mime_type,
+                    "file_uri": amortization_ref.uri,
                 }
             }
         )
+        if terms_ref:
+            parts.append(
+                {
+                    "file_data": {
+                        "mime_type": terms_ref.mime_type,
+                        "file_uri": terms_ref.uri,
+                    }
+                }
+            )
 
-    payload = {
-        "contents": [{"role": "user", "parts": parts}],
-        "generationConfig": {
-            "temperature": 0.1,
-            "responseMimeType": "application/json",
-        },
-    }
-
-    async with httpx.AsyncClient(timeout=120.0) as client:
+        payload = {
+            "contents": [{"role": "user", "parts": parts}],
+            "generationConfig": {
+                "temperature": 0.1,
+                "responseMimeType": "application/json",
+            },
+        }
         response = await client.post(
-            GEMINI_ENDPOINT,
+            _gemini_generate_endpoint(model),
             params={"key": api_key},
             json=payload,
         )
@@ -351,5 +462,10 @@ Rules:
     return LoanAnalysisResult(
         extraction=extraction,
         computed=computed,
+        processing_metadata=GeminiProcessingMetadata(
+            model=model,
+            analyzed_at=datetime.now(UTC),
+            uploaded_files=uploaded_files,
+        ),
         raw_model_output=parsed_raw,
     )
