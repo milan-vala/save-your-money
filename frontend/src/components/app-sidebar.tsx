@@ -10,10 +10,8 @@ import {
 import { Button, DropdownMenu, Popover } from "@radix-ui/themes";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  getLoanAccounts,
-  type LoanAccountListItem,
-} from "../../apis/loan-account-apis";
+import { getLoanAccounts } from "../../apis/loan-account-apis";
+import type { LoanAccountListItem } from "../types/loan-types";
 import { useAuth } from "@src/lib/auth.tsx";
 
 type AppSidebarProps = {

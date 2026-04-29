@@ -1,30 +1,10 @@
-import { API } from "../utils/http-client";
-
-export type CreateLoanAccountPayload = {
-  accountName: string;
-  monthlyDueDate: number;
-  currentMonthEmiPaid?: boolean;
-  amortizationSchedule: File;
-  termsConditions?: File | null;
-};
-
-export type CreateLoanAccountResponse = {
-  id: string;
-};
-
-export type LoanAccountListItem = {
-  id: string;
-  accountName: string;
-};
-
-export type LoanAccountsListResponse = {
-  items: LoanAccountListItem[];
-};
-
-export type LoanAccountDetailsResponse = {
-  id: string;
-  data: Record<string, unknown>;
-};
+import { API } from "@src/utils/http-client";
+import type {
+  CreateLoanAccountPayload,
+  CreateLoanAccountResponse,
+  LoanAccountDetailsResponse,
+  LoanAccountsListResponse,
+} from "@src/types/loan-types";
 
 export async function createLoanAccount(
   payload: CreateLoanAccountPayload

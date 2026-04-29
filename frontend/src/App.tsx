@@ -34,6 +34,8 @@ function App() {
           }
         >
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard/:id" element={<Dashboard />} />
+          <Route path="/dashboard/loan-accounts/:id" element={<Dashboard />} />
         </Route>
         <Route
           element={

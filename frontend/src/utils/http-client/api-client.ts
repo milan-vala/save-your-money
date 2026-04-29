@@ -1,4 +1,4 @@
-import httpClient from "./fetch-instance";
+import httpClient from "@src/utils/http-client/fetch-instance";
 
 export async function GET<T = unknown>(
   endpoint: string,
