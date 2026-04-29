@@ -1,25 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Legend,
-  Pie,
-  PieChart,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import {
   getLoanAccounts,
   getLoanAccountById,
 } from "../../apis/loan-account-apis";
+import { Button } from "@src/ui/button.tsx";
+import {
+  formatCurrency,
+  formatDate,
+  safeDate,
+  toNumber,
+} from "@src/utils/loan-formatters";
+import { LoanBalanceAreaChart } from "@src/components/loan-charts/loan-balance-area-chart";
+import { PaidBreakdownDonutChart } from "@src/components/loan-charts/paid-breakdown-donut-chart";
+import { PaidVsRemainingBarChart } from "@src/components/loan-charts/paid-vs-remaining-bar-chart";
 import type {
   AmortizationScheduleRow,
   LoanAnalysisComputed,
@@ -31,6 +25,7 @@ export function Dashboard() {
   const { id } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showNoAccountsState, setShowNoAccountsState] = useState(false);
   const [account, setAccount] = useState<LoanAccountDetailsResponse | null>(
     null
   );
@@ -41,6 +36,7 @@ export function Dashboard() {
       void (async () => {
         setLoading(true);
         setError(null);
+        setShowNoAccountsState(false);
         try {
           const listResponse = await getLoanAccounts();
           const first = listResponse.items[0];
@@ -49,7 +45,9 @@ export function Dashboard() {
             navigate(`/dashboard/loan-accounts/${first.id}`, { replace: true });
             return;
           }
-          navigate("/dashboard/loan-accounts/new", { replace: true });
+          setAccount(null);
+          setShowNoAccountsState(true);
+          setLoading(false);
         } catch (cause: unknown) {
           if (!mounted) return;
           const message =
@@ -57,6 +55,7 @@ export function Dashboard() {
               ? cause.message
               : "Unable to resolve a loan account for dashboard.";
           setError(message);
+          setShowNoAccountsState(false);
           setLoading(false);
         }
       })();
@@ -69,6 +68,7 @@ export function Dashboard() {
     void (async () => {
       setLoading(true);
       setError(null);
+      setShowNoAccountsState(false);
       try {
         const detailResponse = await getLoanAccountById(id);
         if (mounted) {
@@ -236,6 +236,32 @@ export function Dashboard() {
     );
   }
 
+  if (showNoAccountsState) {
+    return (
+      <section className="py-2">
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-[--gray-6]/60 bg-[--gray-2]/40 p-6 sm:p-8">
+            <p className="text-sm font-medium text-[--accent-11]">
+              Loan Accounts
+            </p>
+            <h1 className="mt-2 text-2xl font-bold tracking-tight text-[--gray-12] sm:text-3xl">
+              No loan accounts present
+            </h1>
+            <p className="mt-3 text-[--gray-11]">
+              Create your first loan account to start tracking EMI breakdown,
+              outstanding balance, and savings opportunities.
+            </p>
+            <div className="mt-6">
+              <Button onClick={() => navigate("/dashboard/loan-accounts/new")}>
+                Create Loan Account
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="py-2">
       <div className="space-y-6 pb-6">
@@ -276,26 +302,7 @@ export function Dashboard() {
               Principal, Interest, Taxes and Processing Fee
             </p>
             <div className="mt-4 h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={paidBreakdownData}
-                    innerRadius={60}
-                    outerRadius={95}
-                    dataKey="value"
-                    nameKey="name"
-                    paddingAngle={2}
-                  >
-                    {paidBreakdownData.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value: number) => formatCurrency(value)}
-                  />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+              <PaidBreakdownDonutChart data={paidBreakdownData} />
             </div>
           </article>
 
@@ -307,32 +314,7 @@ export function Dashboard() {
               Principal, Interest and Taxes
             </p>
             <div className="mt-4 h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={paidVsRemainingData} layout="vertical">
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="rgba(148,163,184,0.25)"
-                  />
-                  <XAxis type="number" tickFormatter={formatCompactCurrency} />
-                  <YAxis dataKey="metric" type="category" width={70} />
-                  <Tooltip
-                    formatter={(value: number) => formatCurrency(value)}
-                  />
-                  <Legend />
-                  <Bar
-                    dataKey="paid"
-                    fill="#3b82f6"
-                    name="Paid"
-                    radius={[0, 6, 6, 0]}
-                  />
-                  <Bar
-                    dataKey="remaining"
-                    fill="#94a3b8"
-                    name="Remaining"
-                    radius={[0, 6, 6, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              <PaidVsRemainingBarChart data={paidVsRemainingData} />
             </div>
           </article>
 
@@ -344,38 +326,7 @@ export function Dashboard() {
               Based on amortization schedule
             </p>
             <div className="mt-4 h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={timelineData}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="rgba(148,163,184,0.25)"
-                  />
-                  <XAxis
-                    dataKey="ts"
-                    type="number"
-                    tickFormatter={(value: number) => formatShortDate(value)}
-                    domain={["dataMin", "dataMax"]}
-                  />
-                  <YAxis tickFormatter={formatCompactCurrency} />
-                  <Tooltip
-                    labelFormatter={(value: number) => formatDate(value)}
-                    formatter={(value: number) => formatCurrency(value)}
-                  />
-                  <ReferenceLine
-                    x={todayTs}
-                    stroke="#f43f5e"
-                    strokeDasharray="5 5"
-                    label={{ value: "Today", fill: "#f43f5e", fontSize: 12 }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="balance"
-                    stroke="#6366f1"
-                    fill="#6366f1"
-                    fillOpacity={0.2}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <LoanBalanceAreaChart data={timelineData} todayTs={todayTs} />
             </div>
           </article>
         </div>
@@ -494,48 +445,4 @@ export function Dashboard() {
       </div>
     </section>
   );
-}
-
-function toNumber(value: unknown): number {
-  return typeof value === "number" && Number.isFinite(value) ? value : 0;
-}
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-function formatCompactCurrency(value: number): string {
-  return new Intl.NumberFormat("en-IN", {
-    notation: "compact",
-    compactDisplay: "short",
-    maximumFractionDigits: 1,
-  }).format(value);
-}
-
-function safeDate(value: string): Date | null {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function formatDate(value: string | number): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "N/A";
-  return date.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatShortDate(value: number): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("en-IN", {
-    month: "short",
-    year: "2-digit",
-  });
 }
